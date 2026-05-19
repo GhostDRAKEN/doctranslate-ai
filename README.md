@@ -31,5 +31,23 @@ docs/         Specifications fonctionnelles et techniques
 ## Etat actuel
 
 Etape 1 terminee : initialisation de l'arborescence du projet.
+Etape 2 en cours : backend FastAPI minimal.
 
-La prochaine etape consiste a mettre en place un backend FastAPI minimal avec configuration, healthcheck et format d'erreur standard.
+## Lancer le backend
+
+Depuis le dossier `backend/` :
+
+```bash
+python -m venv .venv
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+pytest
+```
+
+Endpoint disponible :
+
+```text
+GET /api/health
+```
+
+La prochaine etape consiste a creer le frontend minimal.
