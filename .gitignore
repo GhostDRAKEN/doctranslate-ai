@@ -1,0 +1,46 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Node / frontend
+node_modules/
+.next/
+dist/
+build/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Generated documents and temporary storage
+backend/storage/tmp/*
+!backend/storage/tmp/.gitkeep
+backend/storage/results/
+
+# Uploaded or generated document artifacts
+*.pdf
+*.docx
+*.doc
+*.xlsx
+*.pptx
+!fixtures/pdf/.gitkeep
+!fixtures/pdf/*.pdf
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

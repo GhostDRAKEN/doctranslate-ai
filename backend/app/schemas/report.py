@@ -1,0 +1,1 @@
+"""Validation report schema placeholder."""

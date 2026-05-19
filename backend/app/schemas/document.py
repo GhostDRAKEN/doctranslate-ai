@@ -1,0 +1,1 @@
+"""Document schema placeholder."""
