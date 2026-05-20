@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     api_prefix: str = Field(default="/api", alias="API_PREFIX")
     max_file_size_mb: int = Field(default=10, alias="MAX_FILE_SIZE_MB")
     max_page_count: int = Field(default=10, alias="MAX_PAGE_COUNT")
+    storage_tmp_dir: str = Field(default="storage/tmp", alias="STORAGE_TMP_DIR")
     mock_translation_enabled: bool = Field(
         default=True,
         alias="MOCK_TRANSLATION_ENABLED",
