@@ -1,6 +1,7 @@
 """FastAPI application entrypoint for DocTranslate AI."""
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.documents import router as documents_router
@@ -24,6 +25,14 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         docs_url="/docs",
         redoc_url="/redoc",
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     app.add_exception_handler(AppError, app_error_handler)

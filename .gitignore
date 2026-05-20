@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+!backend/.env.example
+!frontend/.env.local.example
 
 # Python
 __pycache__/
@@ -19,6 +21,7 @@ venv/
 # Node / frontend
 node_modules/
 .next/
+*.tsbuildinfo
 dist/
 build/
 coverage/

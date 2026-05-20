@@ -18,6 +18,15 @@ class Settings(BaseSettings):
         default=True,
         alias="MOCK_TRANSLATION_ENABLED",
     )
+    cors_origins: str = Field(
+        default=(
+            "http://localhost:3000,"
+            "http://localhost:3001,"
+            "http://127.0.0.1:3000,"
+            "http://127.0.0.1:3001"
+        ),
+        alias="CORS_ORIGINS",
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -25,6 +34,16 @@ class Settings(BaseSettings):
         extra="ignore",
         populate_by_name=True,
     )
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """Return configured CORS origins as a normalized list."""
+
+        return [
+            origin.strip()
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
 
 
 @lru_cache
