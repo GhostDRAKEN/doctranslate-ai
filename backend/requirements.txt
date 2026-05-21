@@ -5,5 +5,7 @@ pydantic-settings
 python-dotenv
 pytest
 httpx
+openai
 python-multipart
 pymupdf
+python-docx

@@ -3,13 +3,20 @@
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, File, UploadFile, status
+from fastapi.responses import FileResponse
 
-from app.schemas.document import DocumentUploadResponse
+from app.core.errors import AppError
+from app.schemas.document import (
+    DocumentDocxGenerationResponse,
+    DocumentPdfGenerationResponse,
+    DocumentUploadResponse,
+)
 from app.schemas.job import (
     DocumentStatusResponse,
     ProcessDocumentRequest,
     ProcessDocumentResponse,
 )
+from app.services.docx.docx_generator import generate_docx
 from app.services.extraction_service import read_intermediate
 from app.services.job_service import (
     ensure_document_exists,
@@ -18,7 +25,12 @@ from app.services.job_service import (
     queue_processing_job,
     run_document_processing,
 )
-from app.services.storage_service import save_source_pdf
+from app.services.pdf_overlay_service import generate_pdf_overlay
+from app.services.storage_service import (
+    get_docx_result_path,
+    get_pdf_result_path,
+    save_source_pdf,
+)
 from app.services.upload_validation import (
     read_and_validate_pdf_content,
     validate_pdf_mvp_limits,
@@ -114,3 +126,78 @@ async def document_intermediate(document_id: str) -> dict:
 
     ensure_document_exists(document_id)
     return read_intermediate(document_id)
+
+
+@router.post(
+    "/documents/{document_id}/generate-docx",
+    response_model=DocumentDocxGenerationResponse,
+)
+async def generate_document_docx(document_id: str) -> DocumentDocxGenerationResponse:
+    """Generate a MVP DOCX from the translated intermediate document."""
+
+    generate_docx(document_id)
+    return DocumentDocxGenerationResponse(
+        document_id=document_id,
+        status="docx_generated",
+        download_url=f"/api/documents/{document_id}/download/docx",
+    )
+
+
+@router.post(
+    "/documents/{document_id}/generate-pdf",
+    response_model=DocumentPdfGenerationResponse,
+)
+async def generate_document_pdf(document_id: str) -> DocumentPdfGenerationResponse:
+    """Generate a MVP translated PDF overlay from the intermediate document."""
+
+    generate_pdf_overlay(document_id)
+    return DocumentPdfGenerationResponse(
+        document_id=document_id,
+        status="pdf_generated",
+        download_url=f"/api/documents/{document_id}/download/pdf",
+    )
+
+
+@router.get("/documents/{document_id}/download/docx")
+async def download_document_docx(document_id: str) -> FileResponse:
+    """Download the generated DOCX file."""
+
+    ensure_document_exists(document_id)
+    docx_path = get_docx_result_path(document_id)
+    if not docx_path.is_file():
+        raise AppError(
+            code="DOCX_NOT_FOUND",
+            message="Le document DOCX n'est pas encore disponible.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            details={"document_id": document_id},
+        )
+
+    return FileResponse(
+        path=docx_path,
+        filename="result.docx",
+        media_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "wordprocessingml.document"
+        ),
+    )
+
+
+@router.get("/documents/{document_id}/download/pdf")
+async def download_document_pdf(document_id: str) -> FileResponse:
+    """Download the generated PDF overlay file."""
+
+    ensure_document_exists(document_id)
+    pdf_path = get_pdf_result_path(document_id)
+    if not pdf_path.is_file():
+        raise AppError(
+            code="PDF_NOT_FOUND",
+            message="Le PDF genere est introuvable.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            details={"document_id": document_id},
+        )
+
+    return FileResponse(
+        path=pdf_path,
+        filename="translated_document.pdf",
+        media_type="application/pdf",
+    )

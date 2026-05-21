@@ -49,6 +49,24 @@ def get_intermediate_path(document_id: str) -> Path:
     return get_document_directory(document_id) / "intermediate.json"
 
 
+def get_docx_result_path(document_id: str) -> Path:
+    """Return the internal result.docx path for a document."""
+
+    return get_document_directory(document_id) / "result.docx"
+
+
+def get_pdf_result_path(document_id: str) -> Path:
+    """Return the internal result.pdf path for a document."""
+
+    return get_document_directory(document_id) / "result.pdf"
+
+
+def get_images_directory(document_id: str) -> Path:
+    """Return the internal images directory for extracted PDF images."""
+
+    return get_document_directory(document_id) / "images"
+
+
 def save_source_pdf(document_id: str, content: bytes) -> Path:
     """Save uploaded PDF bytes as source.pdf for the document."""
 

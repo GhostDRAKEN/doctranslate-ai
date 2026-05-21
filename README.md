@@ -27,11 +27,16 @@ docs/         Specifications fonctionnelles et techniques
 - DOCX prioritaire.
 - Export PDF optionnel.
 - LLM reel optionnel apres validation du pipeline mocke.
+- Reconstruction DOCX approximative : le rendu conserve les titres, paragraphes,
+  styles simples, sauts de page et certaines images natives, mais ne vise pas
+  une fidelite pixel-perfect.
+- Le PDF final reste une evolution future et ne bloque pas le MVP.
 
 ## Etat actuel
 
-Etape 1 terminee : initialisation de l'arborescence du projet.
-Etape 2 en cours : backend FastAPI minimal.
+Le backend couvre l'upload PDF, la validation MVP, l'extraction PyMuPDF, la
+traduction mockee et la generation DOCX simple. Le frontend propose un parcours
+minimal upload -> traitement -> generation DOCX -> telechargement.
 
 ## Lancer le backend
 
@@ -48,6 +53,10 @@ Endpoint disponible :
 
 ```text
 GET /api/health
+POST /api/documents/upload
+POST /api/documents/{document_id}/process
+GET /api/documents/{document_id}/status
+GET /api/documents/{document_id}/intermediate
+POST /api/documents/{document_id}/generate-docx
+GET /api/documents/{document_id}/download/docx
 ```
-
-La prochaine etape consiste a creer le frontend minimal.

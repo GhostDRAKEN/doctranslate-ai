@@ -13,6 +13,22 @@ class DocumentUploadResponse(BaseModel):
     status: str
 
 
+class DocumentDocxGenerationResponse(BaseModel):
+    """Response returned after DOCX generation."""
+
+    document_id: str
+    status: str
+    download_url: str
+
+
+class DocumentPdfGenerationResponse(BaseModel):
+    """Response returned after PDF overlay generation."""
+
+    document_id: str
+    status: str
+    download_url: str
+
+
 class DocumentMetadata(BaseModel):
     """Metadata extracted or inferred for a document."""
 
@@ -47,7 +63,21 @@ class DocumentBlock(BaseModel):
 
     id: str
     page_number: int
-    type: Literal["title", "paragraph", "table", "image", "header", "footer", "unknown"]
+    type: Literal[
+        "title",
+        "paragraph",
+        "list_item",
+        "footnote",
+        "caption",
+        "table",
+        "image",
+        "header",
+        "footer",
+        "unknown",
+    ]
+    source_page: int | None = None
+    role: str | None = None
+    confidence_score: float | None = None
     source_text: str
     translated_text: str = ""
     bbox: list[float]

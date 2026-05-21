@@ -2,7 +2,9 @@ import shutil
 
 import fitz
 from fastapi.testclient import TestClient
+from fastapi import status
 
+from app.core.errors import AppError
 from app.main import app
 from app.services.job_service import build_status, write_status
 from app.services.storage_service import (
@@ -160,5 +162,41 @@ def test_process_existing_over_limit_document_fails_without_intermediate() -> No
     assert payload["status"] == "failed"
     assert payload["error"]["code"] == "PDF_TOO_MANY_PAGES"
     assert not get_intermediate_path(document_id).exists()
+
+    _cleanup_document(document_id)
+
+
+def test_process_stops_when_llm_rate_limit_is_reached(monkeypatch) -> None:
+    from app.services import translation_service
+
+    def raise_rate_limit(_: str) -> None:
+        raise AppError(
+            code="LLM_RATE_LIMIT_EXCEEDED",
+            message="La limite Groq a été atteinte. Réessayez plus tard.",
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+
+    monkeypatch.setattr(
+        translation_service,
+        "translate_document_intermediate",
+        raise_rate_limit,
+    )
+
+    client = TestClient(app)
+    document_id = _upload_pdf(client)
+
+    response = client.post(
+        f"/api/documents/{document_id}/process",
+        json={"target_language": "fr", "glossary": []},
+    )
+
+    assert response.status_code == 202
+    status_response = client.get(f"/api/documents/{document_id}/status")
+    payload = status_response.json()
+    assert payload["status"] == "failed"
+    assert payload["error"]["code"] == "LLM_RATE_LIMIT_EXCEEDED"
+    assert payload["error"]["message"] == (
+        "La limite Groq a été atteinte. Réessayez plus tard."
+    )
 
     _cleanup_document(document_id)

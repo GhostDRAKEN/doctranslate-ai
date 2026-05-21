@@ -14,9 +14,10 @@ type ButtonProps = BaseProps &
   };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-brand text-white hover:bg-blue-700 disabled:bg-slate-300",
+  primary:
+    "bg-blue-600 text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700 disabled:bg-slate-300",
   secondary:
-    "border border-line bg-white text-ink hover:bg-surface disabled:text-slate-400",
+    "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 disabled:text-slate-400",
 };
 
 export function Button({
@@ -26,7 +27,7 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
-  const classes = `inline-flex min-h-10 items-center justify-center rounded-md px-4 text-sm font-medium transition ${variantClasses[variant]} ${className}`;
+  const classes = `inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-sm font-medium transition duration-200 ${variantClasses[variant]} ${className}`;
 
   if (asChild && typeof children !== "string") {
     return cloneElement(children, {

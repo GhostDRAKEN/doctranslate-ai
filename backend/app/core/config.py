@@ -19,6 +19,12 @@ class Settings(BaseSettings):
         default=True,
         alias="MOCK_TRANSLATION_ENABLED",
     )
+    llm_provider: str = Field(default="openai", alias="LLM_PROVIDER")
+    llm_api_key: str | None = Field(default=None, alias="LLM_API_KEY")
+    llm_model: str = Field(default="gpt-4o-mini", alias="LLM_MODEL")
+    llm_fallback_to_mock: bool = Field(default=True, alias="LLM_FALLBACK_TO_MOCK")
+    llm_timeout_seconds: float = Field(default=30.0, alias="LLM_TIMEOUT_SECONDS")
+    llm_max_retries: int = Field(default=1, alias="LLM_MAX_RETRIES")
     cors_origins: str = Field(
         default=(
             "http://localhost:3000,"

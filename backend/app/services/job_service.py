@@ -173,6 +173,22 @@ def run_document_processing(document_id: str, job_id: str) -> None:
             document_id,
             build_status(
                 document_id,
+                status_value="processing",
+                current_step="translation",
+                progress=80,
+                job_id=job_id,
+            ),
+        )
+
+        from app.services.translation_service import translate_document_intermediate
+
+        translate_document_intermediate(document_id)
+        time.sleep(0.05)
+
+        write_status(
+            document_id,
+            build_status(
+                document_id,
                 status_value="completed",
                 current_step="done",
                 progress=100,
