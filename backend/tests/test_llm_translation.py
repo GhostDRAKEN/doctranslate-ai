@@ -9,6 +9,7 @@ from app.services.llm_translation_provider import (
     GROQ_BASE_URL,
     LLMTranslationProvider,
     build_system_prompt,
+    build_user_prompt,
     parse_translated_text,
 )
 from app.services.mock_translation_provider import MockTranslationProvider
@@ -394,8 +395,33 @@ def test_llm_prompt_contains_context_and_glossary() -> None:
     prompt = build_system_prompt(context)
 
     assert "traducteur professionnel anglais-francais specialise" in prompt
-    assert "Ne retourne que la traduction francaise." in prompt
+    assert "Traduis uniquement le bloc courant." in prompt
+    assert "Ne retourne que le francais naturel du bloc courant." in prompt
     assert "Ne garde aucun mot anglais inutile." in prompt
+
+
+def test_llm_user_prompt_uses_section_neighbor_context() -> None:
+    context = {
+        "domain": "technical",
+        "tone": "technique, clair et factuel",
+        "target_audience": "equipes techniques",
+        "section_title": "AI Platform",
+        "section_summary": "The platform uses AI for document translation.",
+        "previous_text": "The system receives a PDF.",
+        "next_text": "The user downloads the translated PDF.",
+    }
+
+    prompt = build_user_prompt("It translates each logical block.", context)
+
+    assert "Section :" in prompt
+    assert "AI Platform" in prompt
+    assert "Contexte precedent :" in prompt
+    assert "The system receives a PDF." in prompt
+    assert "Bloc a traduire :" in prompt
+    assert "It translates each logical block." in prompt
+    assert "Contexte suivant :" in prompt
+    assert "The user downloads the translated PDF." in prompt
+    assert "Retourne uniquement la traduction francaise du bloc a traduire." in prompt
 
 
 def test_llm_preserves_proper_nouns_urls_and_note_numbers() -> None:

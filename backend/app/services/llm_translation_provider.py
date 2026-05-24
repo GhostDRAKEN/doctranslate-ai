@@ -86,7 +86,7 @@ class LLMTranslationProvider:
         translated_any = False
         for row in block.get("rows") or []:
             for cell in row.get("cells") or []:
-                source_text = str(cell.get("source_text", ""))
+                source_text = str(cell.get("source_text") or cell.get("text") or "")
                 if not source_text:
                     continue
                 try:
@@ -280,19 +280,42 @@ def build_system_prompt(context: dict[str, Any]) -> str:
     return "\n".join(
         [
             "Tu es un traducteur professionnel anglais-francais specialise dans les documents.",
-            "Traduis le texte anglais en francais naturel, clair et fidele.",
-            "Respecte le ton, le niveau de langue et le contexte.",
+            "Traduis uniquement le bloc courant.",
+            "Utilise le contexte fourni pour comprendre le sens.",
             "Ne traduis pas les noms propres.",
-            "Conserve les nombres, URLs, acronymes, references et notes.",
-            "Ne retourne que la traduction francaise.",
+            "Conserve les nombres, URLs, acronymes et references.",
+            "Ne retourne que le francais naturel du bloc courant.",
             "Ne garde aucun mot anglais inutile.",
-            "Ne commente pas la traduction.",
         ]
     )
 
 
 def build_user_prompt(source_text: str, context: dict[str, Any]) -> str:
     """Build the user prompt for one logical text block."""
+
+    if context.get("section_title") is not None:
+        return "\n".join(
+            [
+                f"Domaine : {context.get('domain', 'general')}",
+                f"Public : {context.get('target_audience', 'lecteurs francophones')}",
+                f"Ton : {context.get('tone', 'professionnel, naturel et clair')}",
+                f"Resume de section : {context.get('section_summary', '')}",
+                "",
+                "Section :",
+                str(context.get("section_title") or ""),
+                "",
+                "Contexte precedent :",
+                str(context.get("previous_text") or "Aucun"),
+                "",
+                "Bloc a traduire :",
+                source_text,
+                "",
+                "Contexte suivant :",
+                str(context.get("next_text") or "Aucun"),
+                "",
+                "Retourne uniquement la traduction francaise du bloc a traduire.",
+            ]
+        )
 
     return "\n".join(
         [

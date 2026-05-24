@@ -58,6 +58,15 @@ class BlockStyle(BaseModel):
     alignment: str = "left"
 
 
+class BlockQuality(BaseModel):
+    """Non-blocking quality scores for one translated block."""
+
+    translation_quality_score: float = 0.0
+    english_residual_score: float = 0.0
+    semantic_consistency_score: float = 0.0
+    overlay_risk_score: float = 0.0
+
+
 class DocumentBlock(BaseModel):
     """A simple MVP document block."""
 
@@ -73,11 +82,18 @@ class DocumentBlock(BaseModel):
         "image",
         "header",
         "footer",
+        "noise",
         "unknown",
     ]
     source_page: int | None = None
     role: str | None = None
     confidence_score: float | None = None
+    table_id: str | None = None
+    table_structure_confidence: float | None = None
+    table_grid_confidence: float | None = None
+    table_diagnostics: dict[str, Any] | None = None
+    semantic_confidence_score: float = 0.0
+    semantic_category: str | None = None
     source_text: str
     translated_text: str = ""
     bbox: list[float]
@@ -87,9 +103,14 @@ class DocumentBlock(BaseModel):
         "pending"
     )
     warnings: list[str] = Field(default_factory=list)
+    quality: BlockQuality = Field(default_factory=BlockQuality)
+    columns: list[dict[str, Any]] | None = None
+    grid: list[list[dict[str, Any]]] | None = None
     rows: list[dict[str, Any]] | None = None
     image_path: str | None = None
     has_possible_text: bool | None = None
+    merged_from: list[str] | None = None
+    merge_reason: str | None = None
 
 
 class DocumentPage(BaseModel):
@@ -99,6 +120,32 @@ class DocumentPage(BaseModel):
     width: float
     height: float
     blocks: list[DocumentBlock] = Field(default_factory=list)
+
+
+class DocumentSection(BaseModel):
+    """Logical section grouping blocks under a title.
+
+    This additive structure prepares future contextual translation and batch
+    processing while preserving the existing page/block representation.
+    """
+
+    section_id: str
+    title: str
+    page_start: int
+    page_end: int
+    block_ids: list[str] = Field(default_factory=list)
+    blocks_count: int
+
+
+class DocumentQuality(BaseModel):
+    """Aggregated non-blocking quality signals for the document."""
+
+    average_translation_quality: float = 0.0
+    average_english_residual_score: float = 0.0
+    average_semantic_consistency: float = 0.0
+    average_overlay_risk: float = 0.0
+    blocks_needing_review: int = 0
+    total_blocks_scored: int = 0
 
 
 class DocumentIntermediate(BaseModel):
@@ -112,4 +159,6 @@ class DocumentIntermediate(BaseModel):
     mvp_limits: MvpLimits
     glossary: list[dict[str, Any]] = Field(default_factory=list)
     pages: list[DocumentPage]
+    sections: list[DocumentSection] = Field(default_factory=list)
+    document_quality: DocumentQuality = Field(default_factory=DocumentQuality)
     warnings: list[str] = Field(default_factory=list)

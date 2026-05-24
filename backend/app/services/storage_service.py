@@ -67,6 +67,12 @@ def get_images_directory(document_id: str) -> Path:
     return get_document_directory(document_id) / "images"
 
 
+def get_batches_directory(document_id: str) -> Path:
+    """Return the internal batches directory for future batch processing."""
+
+    return get_document_directory(document_id) / "batches"
+
+
 def save_source_pdf(document_id: str, content: bytes) -> Path:
     """Save uploaded PDF bytes as source.pdf for the document."""
 

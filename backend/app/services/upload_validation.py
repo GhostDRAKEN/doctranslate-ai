@@ -66,17 +66,22 @@ def validate_pdf_mvp_limits(content: bytes) -> None:
     settings = get_settings()
     try:
         with fitz.open(stream=content, filetype="pdf") as pdf_document:
-            if pdf_document.page_count > settings.max_page_count:
+            max_page_count = (
+                settings.max_batch_experimental_pages
+                if settings.enable_batch_mode
+                else settings.max_page_count
+            )
+            if pdf_document.page_count > max_page_count:
                 raise AppError(
                     code="PDF_TOO_MANY_PAGES",
                     message=(
                         "Le PDF depasse la limite MVP de "
-                        f"{settings.max_page_count} pages."
+                        f"{max_page_count} pages."
                     ),
                     status_code=status.HTTP_400_BAD_REQUEST,
                     details={
                         "page_count": pdf_document.page_count,
-                        "max_page_count": settings.max_page_count,
+                        "max_page_count": max_page_count,
                     },
                 )
 

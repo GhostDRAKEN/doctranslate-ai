@@ -1,27 +1,61 @@
 ---
 name: doctranslate-ai
-description: Guide d'utilisation, de diagnostic et d'amelioration du moteur DocTranslate AI pour traduire des PDF numeriques anglais vers francais avec reconstruction PDF par overlay.
+description: Guide agentique pour utiliser, tester, diagnostiquer et améliorer DocTranslate AI, un moteur de traduction PDF anglais-français avec extraction structurée, traduction IA et reconstruction PDF par overlay.
 ---
 
-# DocTranslate AI
+# DocTranslate AI Skill
 
 ## Objectif
 
-Ce skill aide un assistant de developpement comme Codex ou Claude Code a comprendre, tester, diagnostiquer et ameliorer le MVP DocTranslate AI.
+Ce skill aide un assistant de développement comme Codex ou Claude Code à utiliser, tester, diagnostiquer et améliorer le moteur **DocTranslate AI**.
 
-DocTranslate AI est une application web qui importe un PDF numerique propre, extrait une representation intermediaire structuree, traduit les blocs textuels en francais, puis genere un PDF traduit par overlay en conservant autant que possible les pages, images, fonds et elements graphiques du document source.
+DocTranslate AI est une application web qui importe un PDF numérique propre, extrait une représentation intermédiaire structurée, traduit les blocs textuels en français, puis génère un PDF traduit par overlay en conservant autant que possible les pages, images, fonds et éléments graphiques du document source.
+
+Le but n’est pas seulement de traduire du texte, mais de reconstruire un document exploitable.
+
+## Philosophie du MVP
+
+DocTranslate AI ne cherche pas seulement à remplacer les mots anglais par du français.
+
+Le système cherche à reconstruire un document en préservant :
+
+- la structure ;
+- les images ;
+- le contexte ;
+- la lisibilité ;
+- les blocs logiques ;
+- la cohérence documentaire.
+
+La qualité de reconstruction est aussi importante que la qualité linguistique.
 
 ## Quand utiliser ce skill
 
 Utiliser ce skill pour :
 
-- diagnostiquer un probleme de traduction PDF ;
-- verifier la qualite de `intermediate.json` avant generation PDF ;
+- traduire un PDF via le pipeline DocTranslate AI ;
+- diagnostiquer un problème de traduction PDF ;
+- vérifier la qualité de `intermediate.json` avant génération PDF ;
 - tester le pipeline backend ;
-- analyser un job echoue ;
+- analyser un job échoué ;
 - comprendre pourquoi un PDF traduit ne change pas visuellement ;
-- preparer une demonstration technique du MVP ;
-- proposer une amelioration sans casser les contraintes MVP.
+- détecter des blocs dupliqués ou suspects ;
+- analyser les risques de mauvais overlay PDF ;
+- préparer une démonstration technique du MVP ;
+- proposer une amélioration sans casser les contraintes MVP.
+
+## Capacités du skill
+
+Ce skill permet à un agent IA de :
+
+- analyser un pipeline documentaire PDF ;
+- vérifier la qualité d’une extraction structurée ;
+- diagnostiquer des problèmes de segmentation logique ;
+- détecter des blocs dupliqués ;
+- vérifier la cohérence de `intermediate.json` ;
+- évaluer les risques de mauvais overlay PDF ;
+- vérifier si un document est prêt pour `generate-pdf` ;
+- proposer des améliorations de reconstruction documentaire ;
+- assister un développeur pendant les phases de test et de démonstration.
 
 ## Workflow principal
 
@@ -29,85 +63,3 @@ Le parcours produit attendu est :
 
 ```text
 upload -> process -> inspect intermediate -> generate-pdf -> download
-```
-
-Endpoints associes :
-
-```text
-POST /api/documents/upload
-POST /api/documents/{document_id}/process
-GET  /api/documents/{document_id}/status
-GET  /api/documents/{document_id}/intermediate
-POST /api/documents/{document_id}/generate-pdf
-GET  /api/documents/{document_id}/download/pdf
-```
-
-## Regles importantes
-
-- Ne jamais exposer les cles API, notamment `LLM_API_KEY`.
-- Ne jamais logger le contenu complet d'un document utilisateur.
-- Toujours verifier `backend/storage/tmp/{document_id}/intermediate.json` avant de diagnostiquer le PDF final.
-- Ne pas generer de PDF si la traduction est absente ou incomplete.
-- En cas de rate limit Groq `429` ou `rate_limit_exceeded`, arreter le job et signaler `LLM_RATE_LIMIT_EXCEEDED`.
-- Ne pas fallback vers le mock si `LLM_FALLBACK_TO_MOCK=false`.
-- Preserver les images et elements graphiques du PDF source pendant l'overlay.
-- Ne pas faire d'OCR dans le MVP.
-- Ne pas traiter les PDF scannes complexes.
-- Ne pas viser le pixel-perfect : le MVP vise une reconstruction exploitable et demonstrable.
-
-## Commandes utiles
-
-Depuis la racine du projet :
-
-```powershell
-cd backend
-python -m pytest
-uvicorn app.main:app --reload
-```
-
-Depuis la racine du frontend :
-
-```powershell
-cd frontend
-npm run typecheck
-npm run build
-npm run dev
-```
-
-Inspection d'un document :
-
-```powershell
-python skills/doctranslate-ai/scripts/inspect_intermediate.py <document_id>
-```
-
-Tests backend via script :
-
-```powershell
-powershell -ExecutionPolicy Bypass -File skills/doctranslate-ai/scripts/run_backend_tests.ps1
-```
-
-## Criteres de reussite
-
-- Le PDF source est accepte uniquement s'il respecte les limites MVP.
-- `intermediate.json` contient des pages et des blocs logiques coherents.
-- Les blocs textuels principaux ont un `translated_text` francais non vide.
-- Les fragments suspects sont marques `needs_review`.
-- Le PDF final est genere dans `backend/storage/tmp/{document_id}/result.pdf`.
-- Le PDF telechargeable conserve les images et la structure visuelle generale.
-- Les tests backend passent.
-
-## Limites actuelles
-
-- PDF numeriques propres uniquement.
-- Maximum 10 pages et 10 Mo.
-- Pas d'OCR.
-- Pas de traduction du texte contenu dans les images.
-- Overlay PDF approximatif, sans reflow avance.
-- Analyse de layout encore heuristique.
-- Tables complexes, colonnes multiples et documents tres graphiques restent hors MVP.
-
-## References
-
-- `references/pipeline.md` : pipeline technique complet.
-- `references/troubleshooting.md` : erreurs frequentes et diagnostic.
-- `references/quality-checklist.md` : checklist de validation qualite.

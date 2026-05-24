@@ -49,7 +49,7 @@ class MockTranslationProvider:
         translated_any = False
         for row in block.get("rows") or []:
             for cell in row.get("cells") or []:
-                source_text = str(cell.get("source_text", ""))
+                source_text = str(cell.get("source_text") or cell.get("text") or "")
                 if not source_text:
                     continue
                 cell["translated_text"] = self.translate_text(source_text)

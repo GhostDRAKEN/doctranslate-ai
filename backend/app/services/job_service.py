@@ -140,6 +140,9 @@ def run_document_processing(document_id: str, job_id: str) -> None:
     """Run the current MVP processing pipeline and update status.json."""
 
     try:
+        from app.core.config import get_settings
+
+        settings = get_settings()
         logger.info("Processing started document_id=%s job_id=%s", document_id, job_id)
         write_status(
             document_id,
@@ -168,6 +171,40 @@ def run_document_processing(document_id: str, job_id: str) -> None:
 
         extract_document_intermediate(document_id)
         time.sleep(0.05)
+
+        if settings.enable_batch_mode:
+            write_status(
+                document_id,
+                build_status(
+                    document_id,
+                    status_value="processing",
+                    current_step="translation",
+                    progress=80,
+                    job_id=job_id,
+                ),
+            )
+
+            from app.services.batch_service import resume_incomplete_batches
+
+            resume_incomplete_batches(document_id)
+            time.sleep(0.05)
+
+            write_status(
+                document_id,
+                build_status(
+                    document_id,
+                    status_value="completed",
+                    current_step="done",
+                    progress=100,
+                    job_id=job_id,
+                ),
+            )
+            logger.info(
+                "Batch processing completed document_id=%s job_id=%s",
+                document_id,
+                job_id,
+            )
+            return
 
         write_status(
             document_id,

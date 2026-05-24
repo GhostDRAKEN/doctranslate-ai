@@ -102,24 +102,36 @@ def append_block(document: Document, block: dict[str, Any]) -> None:
         return
 
     if block_type == "table":
-        append_table_as_plain_text(document, block)
+        append_table(document, block)
         return
 
     if block_type == "image":
         append_image(document, block)
 
 
-def append_table_as_plain_text(document: Document, block: dict[str, Any]) -> None:
-    """Render simple table cells as readable lines for the MVP."""
+def append_table(document: Document, block: dict[str, Any]) -> None:
+    """Render simple table cells as a real Word table for the MVP."""
 
-    for row in block.get("rows") or []:
-        cell_texts = [
-            str(cell.get("translated_text") or cell.get("source_text") or "")
-            for cell in row.get("cells") or []
-        ]
-        if cell_texts:
-            paragraph = document.add_paragraph(" | ".join(cell_texts))
-            apply_paragraph_format(paragraph, block, before=0, after=3)
+    rows = block.get("rows") or []
+    if not rows:
+        return
+
+    column_count = max(len(row.get("cells") or []) for row in rows)
+    if column_count < 1:
+        return
+
+    table = document.add_table(rows=len(rows), cols=column_count)
+    table.style = "Table Grid"
+    for row_index, row in enumerate(rows):
+        for column_index, cell in enumerate(row.get("cells") or []):
+            table_cell = table.cell(row_index, column_index)
+            table_cell.text = str(
+                cell.get("translated_text")
+                or cell.get("source_text")
+                or cell.get("text")
+                or ""
+            )
+    document.add_paragraph()
 
 
 def append_discrete_text(document: Document, block: dict[str, Any]) -> None:
