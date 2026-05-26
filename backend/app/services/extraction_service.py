@@ -53,15 +53,59 @@ def extract_document_intermediate(document_id: str) -> DocumentIntermediate:
     return intermediate
 
 
+def extract_document_batch_payload(
+    document_id: str,
+    *,
+    page_start: int,
+    page_end: int,
+) -> dict[str, Any]:
+    """Extract one inclusive page range without writing intermediate.json."""
+
+    source_path = get_source_pdf_path(document_id)
+    if not source_path.is_file():
+        raise AppError(
+            code="DOCUMENT_NOT_FOUND",
+            message="Le document demande est introuvable.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            details={"document_id": document_id},
+        )
+
+    try:
+        with fitz.open(source_path) as pdf_document:
+            intermediate = build_intermediate(
+                document_id,
+                source_path,
+                pdf_document,
+                page_start=page_start,
+                page_end=page_end,
+                initial_image_index=((page_start - 1) * 1000) + 1,
+            )
+    except AppError:
+        raise
+    except Exception as exc:
+        raise AppError(
+            code="INTERNAL_ERROR",
+            message="L'extraction du PDF a echoue.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        ) from exc
+
+    return intermediate.model_dump()
+
+
 def build_intermediate(
     document_id: str,
     source_path: Path,
     pdf_document: fitz.Document,
+    *,
+    page_start: int = 1,
+    page_end: int | None = None,
+    initial_image_index: int = 1,
 ) -> DocumentIntermediate:
     """Build a validated intermediate model from an opened PDF."""
 
     settings = get_settings()
     warnings: list[str] = []
+    page_end = page_end or pdf_document.page_count
     max_page_count = (
         settings.max_batch_experimental_pages
         if settings.enable_batch_mode
@@ -83,10 +127,13 @@ def build_intermediate(
 
     pages: list[dict[str, Any]] = []
     block_index = 1
-    image_index = 1
+    image_index = initial_image_index
     text_block_count = 0
 
     for page_number, page in enumerate(pdf_document, start=1):
+        if page_number < page_start or page_number > page_end:
+            continue
+
         raw_blocks = page.get_text("dict").get("blocks", [])
         text_blocks = [block for block in raw_blocks if block.get("type") == 0]
         image_blocks = [block for block in raw_blocks if block.get("type") == 1]

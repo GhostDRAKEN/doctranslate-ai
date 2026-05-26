@@ -144,6 +144,55 @@ def run_document_processing(document_id: str, job_id: str) -> None:
 
         settings = get_settings()
         logger.info("Processing started document_id=%s job_id=%s", document_id, job_id)
+        if settings.enable_batch_mode:
+            write_status(
+                document_id,
+                build_status(
+                    document_id,
+                    status_value="processing",
+                    current_step="analysis",
+                    progress=10,
+                    job_id=job_id,
+                ),
+            )
+
+            def update_batch_status(current_step: str, progress: int) -> None:
+                write_status(
+                    document_id,
+                    build_status(
+                        document_id,
+                        status_value="processing",
+                        current_step=current_step,
+                        progress=progress,
+                        job_id=job_id,
+                    ),
+                )
+
+            from app.services.batch_service import process_document_in_batches
+
+            process_document_in_batches(
+                document_id,
+                status_callback=update_batch_status,
+            )
+            time.sleep(0.05)
+
+            write_status(
+                document_id,
+                build_status(
+                    document_id,
+                    status_value="completed",
+                    current_step="done",
+                    progress=100,
+                    job_id=job_id,
+                ),
+            )
+            logger.info(
+                "Batch processing completed document_id=%s job_id=%s",
+                document_id,
+                job_id,
+            )
+            return
+
         write_status(
             document_id,
             build_status(
@@ -171,40 +220,6 @@ def run_document_processing(document_id: str, job_id: str) -> None:
 
         extract_document_intermediate(document_id)
         time.sleep(0.05)
-
-        if settings.enable_batch_mode:
-            write_status(
-                document_id,
-                build_status(
-                    document_id,
-                    status_value="processing",
-                    current_step="translation",
-                    progress=80,
-                    job_id=job_id,
-                ),
-            )
-
-            from app.services.batch_service import resume_incomplete_batches
-
-            resume_incomplete_batches(document_id)
-            time.sleep(0.05)
-
-            write_status(
-                document_id,
-                build_status(
-                    document_id,
-                    status_value="completed",
-                    current_step="done",
-                    progress=100,
-                    job_id=job_id,
-                ),
-            )
-            logger.info(
-                "Batch processing completed document_id=%s job_id=%s",
-                document_id,
-                job_id,
-            )
-            return
 
         write_status(
             document_id,

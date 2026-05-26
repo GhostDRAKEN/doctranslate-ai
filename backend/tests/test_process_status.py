@@ -200,3 +200,43 @@ def test_process_stops_when_llm_rate_limit_is_reached(monkeypatch) -> None:
     )
 
     _cleanup_document(document_id)
+
+
+def test_process_uses_batch_pipeline_when_enabled(monkeypatch) -> None:
+    from app.core import config
+    from app.services import batch_service
+
+    settings = config.get_settings()
+    monkeypatch.setattr(settings, "enable_batch_mode", True)
+    monkeypatch.setattr(config, "get_settings", lambda: settings)
+
+    processed_documents: list[str] = []
+
+    def fake_process_document_in_batches(document_id: str, *, status_callback=None):
+        processed_documents.append(document_id)
+        if status_callback:
+            status_callback("translation", 50)
+            status_callback("validation_report", 90)
+        return {"document_id": document_id, "pages": []}
+
+    monkeypatch.setattr(
+        batch_service,
+        "process_document_in_batches",
+        fake_process_document_in_batches,
+    )
+
+    client = TestClient(app)
+    document_id = _upload_pdf(client)
+
+    response = client.post(
+        f"/api/documents/{document_id}/process",
+        json={"target_language": "fr", "glossary": []},
+    )
+    status_response = client.get(f"/api/documents/{document_id}/status")
+
+    assert response.status_code == 202
+    assert processed_documents == [document_id]
+    assert status_response.json()["status"] == "completed"
+    assert status_response.json()["progress"] == 100
+
+    _cleanup_document(document_id)

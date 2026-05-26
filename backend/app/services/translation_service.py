@@ -54,7 +54,25 @@ ENGLISH_RESIDUAL_PHRASES = {
     "artificial intelligence technology",
     "however issues",
 }
-PROTECTED_ACRONYMS = {"AI", "URL", "PDF", "CEFR"}
+PROTECTED_ACRONYMS = {"AI", "API", "CEFR", "HTTP", "IA", "LLM", "OCR", "PDF", "URL"}
+PARAGRAPH_RESIDUAL_KEYWORDS = {
+    "although",
+    "biodiversity",
+    "climate",
+    "coastal",
+    "developing",
+    "earth",
+    "extreme",
+    "global",
+    "however",
+    "human",
+    "it",
+    "many",
+    "over",
+    "rising",
+    "scientists",
+    "while",
+}
 TABLE_CELL_PROTECTED_TOKENS = {"IA", "AI", "PDF", "URL", "CEFR"}
 TABLE_CELL_RESIDUAL_WORDS = {
     "algorithmic",
@@ -635,10 +653,153 @@ def validate_translated_block(
         translated_text = cleaned_text
 
     if not mock_translation_enabled:
+        paragraph_cleaned_text = clean_paragraph_translation_artifacts(
+            str(block.get("source_text") or ""),
+            translated_text,
+        )
+        if paragraph_cleaned_text != translated_text:
+            block["translated_text"] = paragraph_cleaned_text
+            translated_text = paragraph_cleaned_text
+            warnings = block.setdefault("warnings", [])
+            if "paragraph_english_residual_cleaned" not in warnings:
+                warnings.append("paragraph_english_residual_cleaned")
+        if paragraph_english_residual_needs_review(
+            str(block.get("source_text") or ""),
+            translated_text,
+        ):
+            warnings = block.setdefault("warnings", [])
+            if "paragraph_english_residual_needs_review" not in warnings:
+                warnings.append("paragraph_english_residual_needs_review")
         if has_too_many_residual_english_words(translated_text):
             mark_needs_review(block, "suspicious_translation")
         if detect_english_residual(translated_text):
             mark_needs_review(block, "english_residual")
+
+
+def clean_paragraph_translation_artifacts(
+    source_text: str,
+    translated_text: str,
+) -> str:
+    """Remove trailing source-keyword residues from translated text blocks."""
+
+    cleaned = re.sub(r"\s+", " ", translated_text).strip()
+    if not cleaned or cleaned.startswith("[FR MOCK]"):
+        return cleaned
+
+    while True:
+        suffix = find_trailing_source_suffix(source_text, cleaned)
+        if suffix is None or not should_remove_paragraph_suffix(suffix):
+            return cleaned
+        cleaned = cleaned[: suffix["start"]].rstrip(" ,;:-")
+        if not cleaned:
+            return re.sub(r"\s+", " ", translated_text).strip()
+
+
+def paragraph_english_residual_needs_review(
+    source_text: str,
+    translated_text: str,
+) -> bool:
+    """Return whether a text block still ends with a suspicious English suffix."""
+
+    suffix = find_trailing_source_suffix(source_text, translated_text)
+    if suffix is None:
+        return False
+    if is_protected_proper_noun_suffix(
+        [str(token) for token in suffix.get("tokens") or []],
+        [str(token) for token in suffix.get("normalized_tokens") or []],
+    ):
+        return False
+    return not should_remove_paragraph_suffix(suffix)
+
+
+def find_trailing_source_suffix(
+    source_text: str,
+    translated_text: str,
+) -> dict[str, Any] | None:
+    """Find contiguous trailing words copied from the source text."""
+
+    source_tokens = {
+        normalize_table_token(token)
+        for token in re.findall(r"[A-Za-z][A-Za-z.-]*", source_text)
+    }
+    source_tokens.discard("")
+    if not source_tokens:
+        return None
+
+    matches = list(re.finditer(r"\b[A-Za-z][A-Za-z.-]*\b", translated_text))
+    if not matches:
+        return None
+
+    suffix_matches: list[re.Match[str]] = []
+    for match in reversed(matches):
+        token = match.group(0)
+        normalized = normalize_table_token(token)
+        if not normalized or normalized not in source_tokens:
+            break
+        if is_protected_paragraph_token(token):
+            break
+        suffix_matches.insert(0, match)
+
+    if not suffix_matches:
+        return None
+
+    suffix_start = suffix_matches[0].start()
+    prefix = translated_text[:suffix_start].rstrip()
+    suffix_tokens = [match.group(0) for match in suffix_matches]
+    suffix_norms = [normalize_table_token(token) for token in suffix_tokens]
+    return {
+        "start": suffix_start,
+        "prefix": prefix,
+        "tokens": suffix_tokens,
+        "normalized_tokens": suffix_norms,
+    }
+
+
+def should_remove_paragraph_suffix(suffix: dict[str, Any]) -> bool:
+    """Return whether a trailing source suffix is very likely an artifact."""
+
+    prefix = str(suffix.get("prefix") or "")
+    normalized_tokens = [
+        str(token)
+        for token in suffix.get("normalized_tokens") or []
+        if str(token)
+    ]
+    tokens = [str(token) for token in suffix.get("tokens") or []]
+    if not prefix or not normalized_tokens:
+        return False
+    if is_protected_proper_noun_suffix(tokens, normalized_tokens):
+        return False
+
+    prefix_has_sentence_boundary = prefix[-1:] in {".", "!", "?", ";", ":"}
+    contains_residual_keyword = any(
+        token in PARAGRAPH_RESIDUAL_KEYWORDS
+        for token in normalized_tokens
+    )
+    if prefix_has_sentence_boundary and contains_residual_keyword:
+        return True
+    if prefix_has_sentence_boundary and len(normalized_tokens) >= 3:
+        return True
+    return len(normalized_tokens) >= 4 and contains_residual_keyword
+
+
+def is_protected_paragraph_token(token: str) -> bool:
+    """Return whether a trailing token may legitimately stay untranslated."""
+
+    stripped = token.strip(".,;:!?()[]{}\"'")
+    return stripped in PROTECTED_ACRONYMS
+
+
+def is_protected_proper_noun_suffix(
+    tokens: list[str],
+    normalized_tokens: list[str],
+) -> bool:
+    """Keep deliberate proper nouns such as Paris Agreement."""
+
+    if not tokens:
+        return False
+    if any(token in PARAGRAPH_RESIDUAL_KEYWORDS for token in normalized_tokens):
+        return False
+    return all(token[:1].isupper() and token[1:].islower() for token in tokens)
 
 
 def clean_table_block_translations(

@@ -148,6 +148,16 @@ class DocumentQuality(BaseModel):
     total_blocks_scored: int = 0
 
 
+class BatchSummary(BaseModel):
+    """Summary of experimental batch processing."""
+
+    enabled: bool = False
+    batch_size_pages: int = 0
+    total_batches: int = 0
+    completed_batches: int = 0
+    failed_batches: int = 0
+
+
 class DocumentIntermediate(BaseModel):
     """Intermediate representation produced after PDF extraction."""
 
@@ -161,4 +171,5 @@ class DocumentIntermediate(BaseModel):
     pages: list[DocumentPage]
     sections: list[DocumentSection] = Field(default_factory=list)
     document_quality: DocumentQuality = Field(default_factory=DocumentQuality)
+    batch_summary: BatchSummary | None = None
     warnings: list[str] = Field(default_factory=list)

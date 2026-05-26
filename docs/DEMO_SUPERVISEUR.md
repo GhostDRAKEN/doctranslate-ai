@@ -52,6 +52,13 @@ Chaque etape produit ou enrichit une representation intermediaire du document, p
 
 Ce fichier sert de pivot technique : il contient les pages, les blocs, les coordonnees, les textes sources, les textes traduits, les warnings et les signaux de qualite.
 
+Deux modes de traitement coexistent :
+
+- mode MVP classique : extraction et traduction du document complet, limite a 10 pages pour la demonstration ;
+- mode batch experimental : decoupage en lots de pages, sauvegarde de manifests `batch_XXX.json`, reprise possible des lots non termines.
+
+Le mode batch n'a pas vocation a garantir immediatement une qualite production sur de tres longs documents. Il pose une architecture progressive pour traiter des documents plus longs sans tout recommencer apres une erreur intermediaire.
+
 ## 4. Architecture backend
 
 Le backend est construit avec :
