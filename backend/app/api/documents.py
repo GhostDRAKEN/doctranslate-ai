@@ -1,5 +1,6 @@
 """Document-related API routes."""
 
+import json
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, File, UploadFile, status
@@ -10,6 +11,7 @@ from app.schemas.document import (
     DocumentDocxGenerationResponse,
     DocumentPdfGenerationResponse,
     DocumentUploadResponse,
+    QualityReportResponse,
 )
 from app.schemas.job import (
     DocumentStatusResponse,
@@ -26,9 +28,11 @@ from app.services.job_service import (
     run_document_processing,
 )
 from app.services.pdf_overlay_service import generate_pdf_overlay
+from app.services.quality_report_service import generate_and_save_quality_report
 from app.services.storage_service import (
     get_docx_result_path,
     get_pdf_result_path,
+    get_quality_report_path,
     save_source_pdf,
 )
 from app.services.upload_validation import (
@@ -126,6 +130,22 @@ async def document_intermediate(document_id: str) -> dict:
 
     ensure_document_exists(document_id)
     return read_intermediate(document_id)
+
+
+@router.get(
+    "/documents/{document_id}/quality-report",
+    response_model=QualityReportResponse,
+)
+async def document_quality_report(document_id: str) -> QualityReportResponse:
+    """Return or lazily generate the automatic document quality report."""
+
+    ensure_document_exists(document_id)
+    report_path = get_quality_report_path(document_id)
+    if report_path.is_file():
+        payload = json.loads(report_path.read_text(encoding="utf-8"))
+    else:
+        payload = generate_and_save_quality_report(document_id)
+    return QualityReportResponse.model_validate(payload)
 
 
 @router.post(

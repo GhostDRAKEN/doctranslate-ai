@@ -175,6 +175,14 @@ Le rapport ne bloque pas la generation PDF a lui seul. Il sert surtout a signale
 
 Un resume court est egalement ajoute dans `intermediate.json` afin de faciliter le diagnostic technique et la presentation.
 
+Le rapport peut aussi etre recupere via l'API :
+
+```text
+GET /api/documents/{document_id}/quality-report
+```
+
+Si `quality_report.json` existe deja, l'endpoint le retourne directement. Sinon, il le regenere a partir de `intermediate.json` lorsque le document a deja ete traite.
+
 ## 9. Gestion des tableaux
 
 Le projet prend maintenant en charge des tableaux simples.
@@ -248,7 +256,7 @@ Pendant le developpement, la suite backend a atteint plus de 130 tests automatis
 Dernier etat observe pendant les iterations recentes :
 
 ```text
-179 tests backend valides
+183 tests backend valides
 ```
 
 Ce resultat ne signifie pas que le systeme est parfait, mais il montre que les principaux comportements du MVP sont verifies automatiquement.
@@ -306,6 +314,7 @@ POST /api/documents/upload
 POST /api/documents/{document_id}/process
 GET  /api/documents/{document_id}/status
 GET  /api/documents/{document_id}/intermediate
+GET  /api/documents/{document_id}/quality-report
 POST /api/documents/{document_id}/generate-pdf
 GET  /api/documents/{document_id}/download/pdf
 ```

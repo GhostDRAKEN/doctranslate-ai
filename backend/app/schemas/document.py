@@ -29,6 +29,35 @@ class DocumentPdfGenerationResponse(BaseModel):
     download_url: str
 
 
+class QualityReportResponse(BaseModel):
+    """Response returned by the quality report endpoint."""
+
+    document_id: str
+    overall_score: float
+    translation_score: float
+    overlay_score: float
+    semantic_score: float
+    table_score: float
+    english_residual_count: int
+    warnings_count: int
+    blocks_count: int
+    translated_blocks_count: int
+    tables_count: int
+    pages_count: int
+    recommendation: Literal[
+        "document_ready",
+        "document_ready_with_minor_review",
+        "document_needs_review",
+        "document_not_ready",
+    ]
+    major_issues: list[str]
+    minor_issues: list[str]
+    created_at: str
+    total_batches: int | None = None
+    completed_batches: int | None = None
+    failed_batches: int | None = None
+
+
 class DocumentMetadata(BaseModel):
     """Metadata extracted or inferred for a document."""
 
