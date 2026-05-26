@@ -12,6 +12,7 @@ from app.core.errors import AppError
 from app.schemas.job import DocumentStatusResponse
 from app.services.storage_service import (
     document_exists,
+    get_intermediate_path,
     get_status_path,
 )
 from app.utils.ids import generate_job_id
@@ -109,6 +110,30 @@ def get_document_status(document_id: str) -> DocumentStatusResponse:
     return DocumentStatusResponse.model_validate(read_status(document_id))
 
 
+def write_quality_report_if_available(document_id: str) -> None:
+    """Generate the final quality report without blocking the processing job."""
+
+    if not get_intermediate_path(document_id).is_file():
+        logger.warning(
+            "Quality report skipped document_id=%s reason=intermediate_missing",
+            document_id,
+        )
+        return
+
+    try:
+        from app.services.quality_report_service import generate_and_save_quality_report
+
+        report = generate_and_save_quality_report(document_id)
+        logger.info(
+            "Quality report generated document_id=%s recommendation=%s score=%.3f",
+            document_id,
+            report["recommendation"],
+            report["overall_score"],
+        )
+    except Exception:
+        logger.exception("Quality report generation failed document_id=%s", document_id)
+
+
 def queue_processing_job(document_id: str) -> dict[str, str]:
     """Create a queued job and return its public identifiers."""
 
@@ -175,6 +200,7 @@ def run_document_processing(document_id: str, job_id: str) -> None:
                 status_callback=update_batch_status,
             )
             time.sleep(0.05)
+            write_quality_report_if_available(document_id)
 
             write_status(
                 document_id,
@@ -235,6 +261,19 @@ def run_document_processing(document_id: str, job_id: str) -> None:
         from app.services.translation_service import translate_document_intermediate
 
         translate_document_intermediate(document_id)
+        time.sleep(0.05)
+
+        write_status(
+            document_id,
+            build_status(
+                document_id,
+                status_value="processing",
+                current_step="validation_report",
+                progress=90,
+                job_id=job_id,
+            ),
+        )
+        write_quality_report_if_available(document_id)
         time.sleep(0.05)
 
         write_status(

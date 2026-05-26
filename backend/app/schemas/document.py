@@ -158,6 +158,20 @@ class BatchSummary(BaseModel):
     failed_batches: int = 0
 
 
+class QualityReportSummary(BaseModel):
+    """Short quality report summary embedded in intermediate.json."""
+
+    overall_score: float = 0.0
+    recommendation: Literal[
+        "document_ready",
+        "document_ready_with_minor_review",
+        "document_needs_review",
+        "document_not_ready",
+    ] = "document_needs_review"
+    warnings_count: int = 0
+    created_at: str | None = None
+
+
 class DocumentIntermediate(BaseModel):
     """Intermediate representation produced after PDF extraction."""
 
@@ -172,4 +186,5 @@ class DocumentIntermediate(BaseModel):
     sections: list[DocumentSection] = Field(default_factory=list)
     document_quality: DocumentQuality = Field(default_factory=DocumentQuality)
     batch_summary: BatchSummary | None = None
+    quality_report_summary: QualityReportSummary | None = None
     warnings: list[str] = Field(default_factory=list)

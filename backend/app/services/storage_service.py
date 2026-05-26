@@ -61,6 +61,12 @@ def get_pdf_result_path(document_id: str) -> Path:
     return get_document_directory(document_id) / "result.pdf"
 
 
+def get_quality_report_path(document_id: str) -> Path:
+    """Return the internal quality_report.json path for a document."""
+
+    return get_document_directory(document_id) / "quality_report.json"
+
+
 def get_images_directory(document_id: str) -> Path:
     """Return the internal images directory for extracted PDF images."""
 

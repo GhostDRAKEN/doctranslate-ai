@@ -148,7 +148,34 @@ Exemples de warnings :
 - `weak_table_grid` ;
 - `table_cell_english_residual_cleaned`.
 
-## 8. Gestion des tableaux
+## 8. Rapport qualite automatique
+
+Le pipeline genere maintenant un rapport qualite final dans `quality_report.json` apres le traitement du document.
+
+Ce rapport fournit une estimation de fiabilite du document traduit avant usage ou demonstration. Il consolide les informations deja calculees par le pipeline :
+
+- score global ;
+- score de traduction ;
+- score de risque overlay ;
+- score de coherence semantique ;
+- score lie aux tableaux ;
+- nombre de residus anglais detectes ;
+- nombre de warnings ;
+- nombre de blocs traduits ;
+- recommandation finale.
+
+Les recommandations possibles restent simples et explicables :
+
+- `document_ready` ;
+- `document_ready_with_minor_review` ;
+- `document_needs_review` ;
+- `document_not_ready`.
+
+Le rapport ne bloque pas la generation PDF a lui seul. Il sert surtout a signaler les zones qui meritent une verification humaine, par exemple une traduction incomplete, des residus anglais, un risque de debordement visuel ou une structure de tableau fragile.
+
+Un resume court est egalement ajoute dans `intermediate.json` afin de faciliter le diagnostic technique et la presentation.
+
+## 9. Gestion des tableaux
 
 Le projet prend maintenant en charge des tableaux simples.
 
@@ -180,7 +207,7 @@ Les tableaux suivants restent experimentaux :
 - tableaux repartis sur plusieurs pages ;
 - tableaux issus d'images ou de scans.
 
-## 9. Skill IA du projet
+## 10. Skill IA du projet
 
 Le dossier `skills/doctranslate-ai` documente un skill destine a aider un assistant de developpement comme Codex ou Claude Code a travailler sur le projet.
 
@@ -198,7 +225,7 @@ Il contient aussi des scripts utiles, par exemple pour inspecter un document tra
 
 Cette approche rend le projet plus demonstrable : le systeme n'est pas seulement une application, mais aussi un environnement de diagnostic et d'amelioration assiste par IA.
 
-## 10. Tests automatises
+## 11. Tests automatises
 
 Le backend dispose d'une suite pytest couvrant les principales fonctions du MVP :
 
@@ -221,12 +248,12 @@ Pendant le developpement, la suite backend a atteint plus de 130 tests automatis
 Dernier etat observe pendant les iterations recentes :
 
 ```text
-157 tests backend valides
+179 tests backend valides
 ```
 
 Ce resultat ne signifie pas que le systeme est parfait, mais il montre que les principaux comportements du MVP sont verifies automatiquement.
 
-## 11. Limites actuelles du MVP
+## 12. Limites actuelles du MVP
 
 Le MVP ne gere pas encore :
 
@@ -242,7 +269,7 @@ Le MVP ne gere pas encore :
 
 Certaines limites sont volontaires. Pour une demonstration superviseur, le perimetre est centre sur les PDF numeriques propres et les cas documentaires realistes mais maitrisables.
 
-## 12. Travaux futurs
+## 13. Travaux futurs
 
 Les prochaines evolutions possibles sont :
 
@@ -253,14 +280,14 @@ Les prochaines evolutions possibles sont :
 - meilleure detection des regions de layout ;
 - multi-provider LLM ;
 - glossaires metiers plus avances ;
-- rapport qualite automatique ;
+- affichage du rapport qualite dans l'interface ;
 - OCR dans une version ulterieure ;
 - comparaison visuelle source/resultat ;
 - interface utilisateur plus professionnelle ;
 - historique et gestion de documents ;
 - securisation avancee pour documents sensibles.
 
-## 13. Workflow de demonstration
+## 14. Workflow de demonstration
 
 Un workflow de demonstration simple peut etre :
 
@@ -296,7 +323,7 @@ cd frontend
 npm run dev
 ```
 
-## 14. Conclusion
+## 15. Conclusion
 
 DocTranslate AI est un MVP technique serieux de traduction et reconstruction documentaire.
 
